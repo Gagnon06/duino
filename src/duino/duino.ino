@@ -3,7 +3,7 @@
 #include <RCSwitch.h>
 #include <VirtualWire.h>
 
-bool debug = true;
+bool debug = false;
 
 int index = 0;
 
@@ -48,7 +48,6 @@ void process() {
 
   if (debug) {
     Serial.println(messageBuffer);
-    Serial.println("here");
   }
   int cmdid = atoi(cmd);
 
@@ -73,16 +72,14 @@ void process() {
   } else {
     strncpy(val, messageBuffer + 4, 3);
     val[4] = '\0';
-    strncpy(aux, messageBuffer + 7, 3);
-    aux[4] = '\0';
   }
   
   char messageBuffer[30];
 
-  // Serial.println(cmd);
-  // Serial.println(pin);
-  // Serial.println(val);
-  // Serial.println(aux);
+// Serial.println(cmdid);
+// Serial.println(pin);
+// Serial.println(val);
+// Serial.println(aux);
 
   switch(cmdid) {
     case 0:  sm(pin,val);                   break;
@@ -107,10 +104,10 @@ void process() {
 void toggleDebug(char *val) {
   if (atoi(val) == 0) {
     debug = false;
-    Serial.println("goodbye");
+    Serial.println("Debug Off");
   } else {
     debug = true;
-    Serial.println("hello");
+    Serial.println("Debug On");
   }
 }
 
@@ -121,8 +118,9 @@ void sm(char *pin, char *val) {
   if (debug) Serial.println("sm");
   int p = getPin(pin);
   if(p == -1) { if(debug) Serial.println("badpin"); return; }
-  if (atoi(val) == 0) {
+  if (atoi(val) == 1) {
     pinMode(p, OUTPUT);
+    Serial.println("WOW");
   } else {
     pinMode(p, INPUT);
   }
@@ -138,8 +136,11 @@ void dw(char *pin, char *val) {
   pinMode(p, OUTPUT);
   if (atoi(val) == 0) {
     digitalWrite(p, LOW);
+    Serial.println("OFF!");
+    Serial.println(val);
   } else {
     digitalWrite(p, HIGH);
+    Serial.print("ON!");
   }
 }
 
