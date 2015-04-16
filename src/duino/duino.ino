@@ -1,20 +1,29 @@
-#include <Servo.h>
+#include <ServoTimer2.h>
+#include <RCSwitch.h>
+#include <IRremote.h>
+#include <VirtualWire.h>
 
-
-bool debug = false;
+bool debug = true;
 
 int index = 0;
 
-char messageBuffer[12];
+char messageBuffer[30];
 char cmd[3];
 char pin[3];
-char val[4];
+char val[13];
 char aux[4];
+char type[2];
+char addr[5];
+char rfMsg[26];
 
-Servo servo;
+ServoTimer2 servo;
+
+IRsend irsend;
 
 void setup() {
   Serial.begin(115200);
+  vw_setup(2000); //Définition de la vitesse de transmission RF
+  vw_set_tx_pin(7); //Définition du pin TX de la com RF
 }
 
 void loop() {
@@ -37,22 +46,38 @@ void process() {
   strncpy(pin, messageBuffer + 2, 2);
   pin[2] = '\0';
 
-  if (atoi(cmd) > 90) {
+  if (debug) {
+    Serial.println(messageBuffer);
+    Serial.println("here");
+  }
+  int cmdid = atoi(cmd);
+
+  if (cmdid == 95) {
+    strncpy(type, messageBuffer + 4, 1);
+    type[1] = '\0';
+    strncpy(val, messageBuffer + 5, 9);
+    val[8] = '\0';
+    strncpy(addr, messageBuffer + 14, 4);
+    addr[4] = '\0';
+  } else if (cmdid == 96 || cmdid == 94) {
+    strncpy(val, messageBuffer + 4, 12);
+    val[12] = '\0';
+  } else if (cmdid == 93) {
+    strncpy(rfMsg, messageBuffer + 4, 25);
+    rfMsg[25] = '\0';
+  }else if (cmdid > 96) {
     strncpy(val, messageBuffer + 4, 2);
     val[2] = '\0';
     strncpy(aux, messageBuffer + 6, 3);
     aux[3] = '\0';
   } else {
     strncpy(val, messageBuffer + 4, 3);
-    val[3] = '\0';
+    val[4] = '\0';
     strncpy(aux, messageBuffer + 7, 3);
-    aux[3] = '\0';
+    aux[4] = '\0';
   }
-
-  if (debug) {
-    Serial.println(messageBuffer);
-  }
-  int cmdid = atoi(cmd);
+  
+  char messageBuffer[30];
 
   // Serial.println(cmd);
   // Serial.println(pin);
@@ -60,15 +85,19 @@ void process() {
   // Serial.println(aux);
 
   switch(cmdid) {
-    case 0:  sm(pin,val);              break;
-    case 1:  dw(pin,val);              break;
-    case 2:  dr(pin,val);              break;
-    case 3:  aw(pin,val);              break;
-    case 4:  ar(pin,val);              break;
-    case 97: handlePing(pin,val,aux);  break;
-    case 98: handleServo(pin,val,aux); break;
-    case 99: toggleDebug(val);         break;
-    default:                           break;
+    case 0:  sm(pin,val);                   break;
+    case 1:  dw(pin,val);                   break;
+    case 2:  dr(pin,val);                   break;
+    case 3:  aw(pin,val);                   break;
+    case 4:  ar(pin,val);                   break;
+    case 93: handleRFCom(rfMsg);            break;
+    case 94: handleRCDecimal(pin, val);     break;
+    case 95: handleIRsend(type, val, addr); break;
+    case 96: handleRCTriState(pin, val);    break;
+    case 97: handlePing(pin,val,aux);       break;
+    case 98: handleServo(pin,val,aux);      break;
+    case 99: toggleDebug(val);              break;
+    default:                                break;
   }
 }
 
@@ -236,11 +265,6 @@ void handleServo(char *pin, char *val, char *aux) {
     servo.write(atoi(aux));
     delay(15);
 
-    // TODO: Experiment with microsecond pulses
-    // digitalWrite(pin, HIGH);   // start the pulse
-    // delayMicroseconds(pulseWidth);  // pulse width
-    // digitalWrite(pin, LOW);    // stop the pulse
-
   // 03(3) Read
   } else if (atoi(val) == 3) {
     Serial.println("reading servo");
@@ -249,4 +273,87 @@ void handleServo(char *pin, char *val, char *aux) {
     sprintf(m, "%s::read::%03d", pin, sval);
     Serial.println(m);
   }
+}
+
+/*
+ * Handle RC commands
+ * handleRCTriState("10", "0FFF0FFFFF0F")
+ */
+void handleRCTriState(char *pin, char *val) {
+  int p = getPin(pin);
+  if(p == -1) { if(debug) Serial.println("badpin"); return; }
+  if (debug) Serial.println("RC");
+  RCSwitch rc = RCSwitch();
+  rc.enableTransmit(p);
+  rc.sendTriState(val);
+}
+
+/*
+ * Handle RC commands via decimal code
+ * For those sockets that don't use tri-state.
+ * handleRCDecimal("10", "5522351")
+ */
+void handleRCDecimal(char *pin, char *val) {
+  int p = getPin(pin);
+  if (p == -1) { if (debug) Serial.println("badpin"); return; }
+  if (debug) Serial.println("RCdec" + atol(val));
+  RCSwitch rc = RCSwitch();
+  rc.enableTransmit(p);
+  rc.send(atol(val), 24);
+}
+
+/*
+ * Handle IR commands
+ */
+void handleIRsend(char *type, char *val, char *addr) {
+  if (debug) Serial.println("IR");
+  Serial.println(atoi(type));
+  Serial.println(strtol(val, (char **)0,16));
+  Serial.println(atoi(addr));
+  switch (atoi(type)) {
+    case 1:
+      irsend.sendRC5(strtol(val, (char **)0, 16), atoi(addr));
+      break;
+    case 2:
+      irsend.sendRC6(strtol(val, (char **)0, 16), atoi(addr));
+      break;
+    case 3:
+     irsend.sendNEC(strtol(val, (char **)0, 16), atoi(addr));
+      break;
+    case 4:
+      irsend.sendSony(strtol(val, (char **)0, 16), atoi(addr));
+      break;
+    case 5:
+      irsend.sendDISH(strtol(val, (char **)0, 16), atoi(addr));
+      break;
+    case 6:
+      irsend.sendSharp(strtol(val, (char **)0, 16), atoi(addr));
+      break;
+    case 7:
+      irsend.sendPanasonic(strtol(addr, (char **)0, 16), strtol(val, (char **)0, 16));
+      break;
+    case 8:
+      irsend.sendJVC(atoi(val), atoi(addr), 1);
+      break;
+  }
+}
+
+/*
+ * Handle RF com 
+ */
+void handleRFCom(char *msg) {
+  Serial.println("RF");
+  Serial.println(msg);
+  Serial.println(strlen(msg));
+  sendRFMsg(msg);
+}
+/*
+*Fonction qui envoit un message par le pin définit dans setup()
+*/
+void sendRFMsg(char *msg)
+{
+  vw_send((uint8_t *)msg, strlen(msg));
+  vw_wait_tx();
+  delay(1000);
+  Serial.println("RF done");
 }
