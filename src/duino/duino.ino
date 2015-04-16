@@ -1,6 +1,6 @@
+#include <IRremote.h>
 #include <ServoTimer2.h>
 #include <RCSwitch.h>
-#include <IRremote.h>
 #include <VirtualWire.h>
 
 bool debug = true;
