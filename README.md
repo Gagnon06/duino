@@ -2,7 +2,10 @@
 
 A framework for working with Arduinos in node.js
 
-![arduino](http://i.imgur.com/eFq84.jpg)
+##New libraries
+- RF
+- RC from ni-c
+- IR from ni-c
 
 # install
 
@@ -96,6 +99,24 @@ Constants for use in low-level digital writes
 ###board.analogWrite(pin,val)
 
 Write a value between 0-255 to a pin
+
+##RC
+
+Send command to RC switch
+
+Thanks to ni-c : https://github.com/ni-c/duino
+
+##IR
+
+Send IR signals
+
+Thanks to ni-c : https://github.com/ni-c/duino
+
+##VW
+
+Communication between arduinos based on VirtualWire library.
+
+VirtualWire : https://www.pjrc.com/teensy/td_libs_VirtualWire.html
 
 ##led
 
@@ -271,6 +292,7 @@ Instruct the servo to immediately go to a position from 0 to 180.
 ##motor
 
 ##potentiometer
+
 
 # protocol
 
