@@ -74,7 +74,8 @@ void process() {
     val[4] = '\0';
   }
   
-  char messageBuffer[30];
+  //Empty the buffer for the next message
+  memset(messageBuffer, 0, 30 * (sizeof messageBuffer[0]) );
 
 // Serial.println(cmdid);
 // Serial.println(pin);
