@@ -18,15 +18,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/ecto/duino.git"
+    "url": "git://github.com/gagnon/duino.git"
   },
   "main": "index.js",
   "engines": {
     "node": "*"
   },
   "dependencies": {
-    "serialport": "voodootikigod/node-serialport",
-    "colors": "*"
+    "serialport": "*",
+    "chalk": "*"
   },
   "devDependencies": {}
 }
