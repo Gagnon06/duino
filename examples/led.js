@@ -1,8 +1,7 @@
 var arduino = require('../');
 
 var board = new arduino.Board({
-    debug: true,
-    baudrate: 115200
+    debug: true
 });
 
 var led = new arduino.Led({

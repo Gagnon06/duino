@@ -3,7 +3,7 @@
 #include <RCSwitch.h>
 #include <VirtualWire.h>
 
-bool debug = false;
+bool debug = true;
 
 int index = 0;
 
@@ -104,10 +104,10 @@ void process() {
 void toggleDebug(char *val) {
   if (atoi(val) == 0) {
     debug = false;
-    Serial.println("Debug Off");
+    Serial.println("goodbye");
   } else {
     debug = true;
-    Serial.println("Debug On");
+    Serial.println("hello");
   }
 }
 
