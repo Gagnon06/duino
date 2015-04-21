@@ -121,7 +121,6 @@ void sm(char *pin, char *val) {
   if(p == -1) { if(debug) Serial.println("badpin"); return; }
   if (atoi(val) == 1) {
     pinMode(p, OUTPUT);
-    Serial.println("WOW");
   } else {
     pinMode(p, INPUT);
   }
@@ -137,11 +136,9 @@ void dw(char *pin, char *val) {
   pinMode(p, OUTPUT);
   if (atoi(val) == 0) {
     digitalWrite(p, LOW);
-    Serial.println("OFF!");
     Serial.println(val);
   } else {
     digitalWrite(p, HIGH);
-    Serial.print("ON!");
   }
 }
 
@@ -309,9 +306,6 @@ void handleRCDecimal(char *pin, char *val) {
  */
 void handleIRsend(char *type, char *val, char *addr) {
   if (debug) Serial.println("IR");
-  Serial.println(atoi(type));
-  Serial.println(strtol(val, (char **)0,16));
-  Serial.println(atoi(addr));
   switch (atoi(type)) {
     case 1:
       irsend.sendRC5(strtol(val, (char **)0, 16), atoi(addr));
@@ -344,9 +338,11 @@ void handleIRsend(char *type, char *val, char *addr) {
  * Handle RF com 
  */
 void handleRFCom(char *msg) {
-  Serial.println("RF");
-  Serial.println(msg);
-  Serial.println(strlen(msg));
+  if(debug) {
+    Serial.println("RF");
+    Serial.println(msg);
+    Serial.println(strlen(msg));
+  }
   sendRFMsg(msg);
 }
 /*
@@ -357,5 +353,5 @@ void sendRFMsg(char *msg)
   vw_send((uint8_t *)msg, strlen(msg));
   vw_wait_tx();
   delay(1000);
-  Serial.println("RF done");
+  if(debug) Serial.println("RF done");
 }
