@@ -224,7 +224,7 @@ void handlePing(char *pin, char *val, char *aux) {
     Serial.println("ping fired");
 
     pinMode(p, INPUT);
-    sprintf(m, "%s::read::%08d", pin, pulseIn(p, HIGH));
+    sprintf(m, "ping::%s::read::%08d", pin, pulseIn(p, HIGH));
     Serial.println(m);
 
     delay(50);
