@@ -2,9 +2,11 @@
 #include <ServoTimer2.h>
 #include <RCSwitch.h>
 #include <VirtualWire.h>
+#include "RfCom.h"
+
+#define BASE_REF 123
 
 bool debug = true;
-
 int index = 0;
 
 char messageBuffer[30];
@@ -17,13 +19,12 @@ char addr[5];
 char rfMsg[26];
 
 ServoTimer2 servo;
-
+RFCom rfcom(9, 7, BASE_REF, BASE_REF);
 IRsend irsend;
 
 void setup() {
   Serial.begin(115200);
-  vw_setup(2000); //Définition de la vitesse de transmission RF
-  vw_set_tx_pin(7); //Définition du pin TX de la com RF
+  rfcom.init();
 }
 
 void loop() {
@@ -49,7 +50,7 @@ void process() {
   if (debug) {
     Serial.println(messageBuffer);
   }
-  int cmdid = atoi(cmd);
+  MsgType cmdid = (MsgType)atoi(cmd);
 
   if (cmdid == 95) {
     strncpy(type, messageBuffer + 4, 1);
@@ -83,18 +84,18 @@ void process() {
 // Serial.println(aux);
 
   switch(cmdid) {
-    case 0:  sm(pin,val);                   break;
-    case 1:  dw(pin,val);                   break;
-    case 2:  dr(pin,val);                   break;
-    case 3:  aw(pin,val);                   break;
-    case 4:  ar(pin,val);                   break;
-    case 93: handleRFCom(rfMsg);            break;
-    case 94: handleRCDecimal(pin, val);     break;
-    case 95: handleIRsend(type, val, addr); break;
-    case 96: handleRCTriState(pin, val);    break;
-    case 97: handlePing(pin,val,aux);       break;
-    case 98: handleServo(pin,val,aux);      break;
-    case 99: toggleDebug(val);              break;
+    case SM:  sm(pin,val);                   break;
+    case DW:  dw(pin,val);                   break;
+    case DR:  dr(pin,val);                   break;
+    case AW:  aw(pin,val);                   break;
+    case AR:  ar(pin,val);                   break;
+    case RF: handleRFCom(rfMsg);            break;
+    case RCDecimal: handleRCDecimal(pin, val);     break;
+    case IR: handleIRsend(type, val, addr); break;
+    case RCTristate: handleRCTriState(pin, val);    break;
+    case Ping: handlePing(pin,val,aux);       break;
+    case Servo: handleServo(pin,val,aux);      break;
+    case Debug: toggleDebug(val);              break;
     default:                                break;
   }
 }
@@ -343,15 +344,22 @@ void handleRFCom(char *msg) {
     Serial.println(msg);
     Serial.println(strlen(msg));
   }
-  sendRFMsg(msg);
-}
-/*
-*Fonction qui envoit un message par le pin définit dans setup()
-*/
-void sendRFMsg(char *msg)
-{
-  vw_send((uint8_t *)msg, strlen(msg));
-  vw_wait_tx();
-  delay(1000);
+  RfMessage rfmsg;
+
+  char recv[3];
+  char type[3];
+  char param[26];
+
+  strncpy(recv, msg + 3, 2);
+  recv[2] = '\0';
+  rfmsg.recvId = (MsgType)atoi(recv);
+  strncpy(type, msg + 5, 2);
+  type[2] = '\0';
+  rfmsg.type = (MsgType)atoi(type);
+  strncpy(param, msg + 7, 25);
+  param[25] = '\0';
+  rfmsg.param = (MsgType)atoi(param);
+
+  rfcom.sendMessage(rfmsg, 200);
   if(debug) Serial.println("RF done");
 }
